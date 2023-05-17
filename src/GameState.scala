@@ -1,5 +1,7 @@
 import Cells._
-import GameState.{swapPlayer, getStartPosition, getNeighbours}
+import GameState.swapPlayer
+
+import scala.annotation.tailrec
 
 case class GameState(board: Board, moveHistory: List[(Position, Cell)], currentPlayer: Cell) {
   def isBoardFull: Boolean = board.isFull
@@ -58,45 +60,54 @@ object GameState {
   }
 
   def getContiguousLineDFS(player: Cell, board: Board): List[Position] = {
-    val size = board.size
+    val size = board.size 
 
-    def dfs(pos: Position, visitedCoords: Set[Position], cache: Map[Position, List[Position]]): (List[Position], Map[Position, List[Position]]) = {
-      if (!board.isValidPosition(pos) || board.getCellAt(pos) != player)
-        return (List.empty, cache)
+    @tailrec
+    def dfs(stack: List[(Position, List[Position])], visitedCoords: Set[Position], cache: Map[Position, List[Position]]): (List[Position], Map[Position, List[Position]]) = {
+      stack match {
+        // If the stack is empty, return the cache
+        case Nil => (Nil, cache)
 
-      if (player == Red && pos.y == size - 1) (List(pos), cache)
-      else if (player == Blue && pos.x == size - 1) (List(pos), cache)
-      else if (!visitedCoords.contains(pos)) {
-        val newVisitedCoords = visitedCoords + pos
-        val neighbours = getNeighbours(pos, player)
+        // If the stack is not empty, pop the top position and its associated path
+        case (pos, path) :: rest =>
 
-        cache.get(pos) match {
-          case Some(cachedResult) => (cachedResult, cache)
-          case None =>
-            val (pathFound, updatedCache) = neighbours.foldLeft((List.empty[Position], cache)) {
-              case ((pathFound, cache), Position(neighbourX, neighbourY)) =>
-                if (pathFound.nonEmpty) (pathFound, cache)
-                else {
-                  val neighbourPos = Position(neighbourX, neighbourY)
-                  val (path, newCache) = dfs(neighbourPos, newVisitedCoords, cache)
-                  if (path.nonEmpty) (pos :: path, newCache) else (path, newCache)
-                }
+          // If the current position is not valid or does not contain the player's cell, skip it and continue with the rest of the stack
+          if (!board.isValidPosition(pos) || board.getCellAt(pos) != player)
+            dfs(rest, visitedCoords, cache)
+
+          // If the current position is a winning position for the player, return the path leading to it
+          else if ((player == Red && pos.y == size - 1) || (player == Blue && pos.x == size - 1))
+            (pos :: path, cache)
+
+          // If the current position is valid and has not been visited before, visit it
+          else if (!visitedCoords.contains(pos)) {
+            val newVisitedCoords = visitedCoords + pos  // Mark the current position as visited
+            val neighbours = getNeighbours(pos, player) // Get the neighbours of the current position
+
+            // Check the cache to see if the current position has been visited before
+            cache.get(pos) match {
+
+              // If the current position is in the cache, skip it and continue with the rest of the stack
+              case Some(cachedResult) =>
+                dfs(rest, visitedCoords, cache)
+
+              // If the current position is not in the cache, add its neighbours to the stack and update the cache
+              case None =>
+                val newStack = neighbours.map((_, pos :: path)) ++ rest  // Add the neighbours to the stack
+                dfs(newStack, newVisitedCoords, cache + (pos -> (pos :: path))) // Update the cache and continue with the new stack
             }
-            val newCache = updatedCache + (pos -> pathFound)
-            (pathFound, newCache)
-        }
+          }
+
+          // If the current position has been visited before, skip it and continue with the rest of the stack
+          else dfs(rest, visitedCoords, cache)
       }
-      else (List.empty, cache)
     }
 
     val startPosition = getStartPosition(player, board, populated = true)
     val initialCache = Map.empty[Position, List[Position]]
+    val startStack = startPosition.map((_, Nil))
 
-    val (path, _) = startPosition.foldLeft((List.empty[Position], initialCache)) {
-      case ((pathFound, cache), pos) =>
-        if (pathFound.nonEmpty) (pathFound, cache)
-        else dfs(pos, Set.empty, cache)
-    }
+    val (path, _) = dfs(startStack, Set.empty, initialCache)
 
     path
   }
