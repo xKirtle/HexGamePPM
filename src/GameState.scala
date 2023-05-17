@@ -1,27 +1,26 @@
 import Cells._
 import GameState.{swapPlayer, getStartPosition, getNeighbours}
 
-// TODO: Include current player in game state? Swap value on play() and undo()
-case class GameState(board: Board, moveHistory: List[(Int, Int, Cell)]) {
-  def isBoardFull: Boolean = getEmptyCells == List.empty
+case class GameState(board: Board, moveHistory: List[(Position, Cell)], currentPlayer: Cell) {
+  def isBoardFull: Boolean = board.isFull
 
   def isValidMove(position: Position): Boolean = {
     board.isValidPosition(position) && board.getCellAt(position) == Empty
   }
-  
+
   def play(position: Position): GameState = {
     val newBoard = board.updateCellsAt(currentPlayer, position)
     val newMoveHistory = (position, currentPlayer) :: moveHistory
-    
+
     GameState(newBoard, newMoveHistory, swapPlayer(currentPlayer))
   }
-  
+
   def undoPlay(amount: Int): GameState = {
-    val newMoveHistory = moveHistory.drop(amount)
-    val moves = moveHistory.take(amount).map {
-      case (row, col, _) => (row, col)
+    val (movesToUndo, newMoveHistory) = moveHistory.splitAt(amount)
+    val moves = movesToUndo.map {
+      case (position, _) => position
     }
-    
+
     val newBoard = board.updateCellsAt(Empty, moves: _*)
     GameState(newBoard, newMoveHistory, swapPlayer(currentPlayer))
   }
@@ -33,7 +32,7 @@ object GameState {
     val actualFirstPlayer = swapPlayer(swapPlayer(firstPlayer))
     GameState(Board(boardSize), List.empty, actualFirstPlayer)
   }
-  
+
   def swapPlayer(player: Cell): Cell = {
     if (player == Red) Blue else Red
   }
