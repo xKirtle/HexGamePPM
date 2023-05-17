@@ -1,8 +1,9 @@
-import Cells.{Red, Blue, Cell}
+import Cells.{Blue, Cell, Red}
+import GameState.{getNeighbours, getStartPosition}
 
 import scala.util.Random
 
-case class MoveGenerator(seed: Long) {
+case class MoveGenerator(seed: Long = Random.nextLong) {
   private def nextInt: (Int, MoveGenerator) = {
     val newSeed = (seed * 0x5DEECE66DL + 0xBL) & 0xFFFFFFFFFFFFL
     val nextRandom = MoveGenerator(newSeed)
@@ -17,9 +18,9 @@ case class MoveGenerator(seed: Long) {
     
     (if (nn < 0) -nn else nn, nextRandom)
   }
-
-  def randomMove(gameState: GameState): ((Int, Int), MoveGenerator) = {
-    val emptyCells = gameState.getEmptyCells
+  
+  def randomMove(board: Board): (Position, MoveGenerator) = {
+    val emptyCells = board.getEmptyCellsPositions
     val (index, nextRandom) = nextInt(emptyCells.length)
 
     (emptyCells(index), nextRandom)
@@ -31,24 +32,25 @@ case class MoveGenerator(seed: Long) {
   }
   
   // Gets all the best coordinates to play and plays a random one (no preference to the ones that get closer to objective)
-  def betterRandomMove(gameState: GameState): ((Int, Int), MoveGenerator) = {
-    val player = gameState.getCurrentPlayer
+  def betterRandomMove(gameState: GameState): (Position, MoveGenerator) = {
+    val player = gameState.currentPlayer
+    val board = gameState.board
     
     val neighbouringCells = gameState.moveHistory.collect {
-      case (row, col, moveHistoryPlayer) if moveHistoryPlayer == player => gameState.getNeighbours(row, col, moveHistoryPlayer)
+      case (position, moveHistoryPlayer) if moveHistoryPlayer == player => getNeighbours(position, moveHistoryPlayer)
     }.flatten.toSet
 
-    val emptyCells = gameState.getEmptyCells
-    val emptyNeighbourCells = emptyCells.filter(neighbouringCells.contains)
+    val emptyCellsPositions = board.getEmptyCellsPositions
+    val emptyNeighbourCellsPositions = emptyCellsPositions.filter(neighbouringCells.contains)
     
-    val startPositions = gameState.getStartPosition(player, populated = false)
-    val emptyStartPositions = emptyCells.filter(startPositions.contains)
+    val startPositions = getStartPosition(player, board, populated = false)
+    val emptyStartPositions = emptyCellsPositions.filter(startPositions.contains)
 
     // If there are no valid neighbours, use start positions or any random neighbouring empty cell
-    val validCells = (emptyNeighbourCells.isEmpty, emptyStartPositions.isEmpty) match {
-      case (true, true) => emptyCells
+    val validCells = (emptyNeighbourCellsPositions.isEmpty, emptyStartPositions.isEmpty) match {
+      case (true, true) => emptyCellsPositions
       case (true, false) => emptyStartPositions
-      case _ => emptyNeighbourCells
+      case _ => emptyNeighbourCellsPositions
     }
 
     val (index, newMoveGenerator) = nextInt(validCells.length)
@@ -56,34 +58,31 @@ case class MoveGenerator(seed: Long) {
     (validCells(index), newMoveGenerator)
   }
   
-  def weightedRandomMove(gameState: GameState): ((Int, Int), MoveGenerator) = {
-    val player = if (gameState.moveHistory.head._3 == Red) Blue else Red
-    val maxRowIndex = gameState.board.length - 1
-    val maxColIndex = gameState.board.head.length - 1
+  def weightedRandomMove(gameState: GameState): (Position, MoveGenerator) = {
+    val player = gameState.currentPlayer
+    val board = gameState.board
+    
+    val maxBoardIndex = gameState.board.size - 1
 
     val target = player match {
-      case Red => (maxRowIndex, maxColIndex)
-      case Blue => (maxRowIndex, 0)
+      case Red => (maxBoardIndex, maxBoardIndex)
+      case Blue => (maxBoardIndex, 0)
     }
 
     // Manhattan distance heuristic
-    def heuristic(row: Int, col: Int, targetRow: Int, targetCol: Int): Int =
-      math.abs(row - targetRow) + math.abs(col - targetCol)
+    def heuristic(position: Position, targetRow: Int, targetCol: Int): Int =
+      math.abs(position.x - targetRow) + math.abs(position.y - targetCol)
 
     val neighboringCells = gameState.moveHistory.flatMap {
-      case (row, col, _) => gameState.getNeighbours(row, col, player)
+      case (position, _) => getNeighbours(position, player)
     }.toSet
 
-    val scoredNeighboringCells = neighboringCells.map { case (row, col) =>
-      ((row, col), heuristic(row, col, target._1, target._2))
+    val scoredNeighboringCells = neighboringCells.map { position =>
+      (position, heuristic(position, target._1, target._2))
     }
 
     val bestMove = scoredNeighboringCells.minBy(_._2)._1
 
     (bestMove, this)
   }
-}
-
-object MoveGenerator {
-  def createNewMoveGenerator: MoveGenerator = MoveGenerator(Random.nextLong())
 }

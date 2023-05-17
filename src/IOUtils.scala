@@ -1,5 +1,4 @@
 import Cells._
-import GameState.Board
 
 import scala.annotation.tailrec
 import scala.io.StdIn.readLine
@@ -21,11 +20,11 @@ object IOUtils {
 
     val redAsterisk = Console.RED + "*" + Console.RESET
     val blueAsterisk = Console.BLUE + "*" + Console.RESET
-    val numCols = board.head.length
+    val numCols = board.cells.head.length
 
     val header = "X " + s"$blueAsterisk " * asterisksPerSquare(numCols) + "X"
 
-    val rows = board.zipWithIndex.map {
+    val rows = board.cells.zipWithIndex.map {
       case (row, index) =>
         val padding = " " * index
         s"$padding $redAsterisk ${row.map(cellToColoredString).mkString("")} $redAsterisk"
@@ -37,12 +36,12 @@ object IOUtils {
   }
 
   @tailrec
-  def getPlayerMove(gameState: GameState): (Int, Int) = {
+  def getPlayerMove(gameState: GameState): Position = {
     val prompt = "Please enter your move coordinates separated by a space (ex: '0 11'): "
-    val move = readTwoPositiveIntegers(prompt)
+    val position = readTwoPositiveIntegers(prompt)
 
-    if (gameState.isValidMove(move._1, move._2)) {
-      (move._1, move._2)
+    if (gameState.isValidMove(position)) {
+      position
     }
     else {
       println("Invalid coordinates or coordinates already used. Please try again.")
@@ -50,7 +49,7 @@ object IOUtils {
     }
   }
 
-  private def readTwoPositiveIntegers(prompt: String): (Int, Int) = {
+  private def readTwoPositiveIntegers(prompt: String): Position = {
     val input = readLine(prompt)
     input.split(" ") match {
       case Array(a, b) =>
@@ -58,7 +57,7 @@ object IOUtils {
           val x = a.toInt
           val y = b.toInt
 
-          if (x >= 0 && y >= 0) (x, y)
+          if (x >= 0 && y >= 0) Position(x, y)
           else {
             println("Both numbers must be positive.")
             readTwoPositiveIntegers(prompt)

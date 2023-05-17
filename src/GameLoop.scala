@@ -1,20 +1,21 @@
 import Cells._
-import GameState.swapPlayer
+import GameState.{getContiguousLineDFS, swapPlayer}
 
 import scala.annotation.tailrec
 
 private object GameLoop extends App {
   private val boardSize: Int = args(0).toInt
-  private val initialGameState: GameState = GameState.createNewGameState(boardSize)
-  private val initialMoveGenerator: MoveGenerator = MoveGenerator.createNewMoveGenerator
+  private val initialGameState: GameState = GameState.createNewGameState(boardSize, Red)
+  private val initialMoveGenerator: MoveGenerator = MoveGenerator()
   
   @tailrec
-  private def gameLoop(gameState: GameState, moveGenerator: MoveGenerator, player: Cell): Unit = {
-    val winningPath = gameState.getContiguousLineDFS(player)
+  private def gameLoop(gameState: GameState, moveGenerator: MoveGenerator): Unit = {
+    val prevPlayer = swapPlayer(gameState.currentPlayer)
+    val winningPath = getContiguousLineDFS(prevPlayer, gameState.board)
     
     if (winningPath.nonEmpty) {
-      println(s"$player wins!")
-      val endBoard = gameState.markWinningPath(winningPath, Winner).board
+      println(s"$prevPlayer wins!")
+      val endBoard = gameState.board.markWinningPath(winningPath, Winner)
       IOUtils.printBoard(endBoard)
     }
     else if (gameState.isBoardFull) {
@@ -22,12 +23,12 @@ private object GameLoop extends App {
       IOUtils.printBoard(gameState.board)
     }
     else {
-      val (randomMove, newMoveGenerator) = moveGenerator.randomMove(gameState)
-      val newGameState = gameState.play(player, randomMove._1, randomMove._2)
+      val (randomMove, newMoveGenerator) = moveGenerator.randomMove(gameState.board)
+      val newGameState = gameState.play(randomMove)
       
-      gameLoop(newGameState, newMoveGenerator, swapPlayer(player))
+      gameLoop(newGameState, newMoveGenerator)
     }
   }
   
-  gameLoop(initialGameState, initialMoveGenerator, Red)
+  gameLoop(initialGameState, initialMoveGenerator)
 }
