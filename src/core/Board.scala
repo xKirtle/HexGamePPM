@@ -2,8 +2,6 @@ package core
 
 import core.Cells.{Cell, Empty}
 
-// TODO: core.Board pode ser uma case class em vez do type? || type core.Board = List[List[Cells.Cell]]
-
 // private para obrigar a usar o apply
 case class Board private (size: Int, cells: List[List[Cell]]) {
   def isFull: Boolean = getEmptyCellsPositions == List.empty
@@ -47,8 +45,6 @@ case class Board private (size: Int, cells: List[List[Cell]]) {
 }
 
 object Board {
+  //Board(size = 25) -> vai chamar o apply do companion object
   def apply(size: Int): Board = new Board(size, List.fill(size)(List.fill(size)(Empty)))
 }
-
-// vai chamar o apply do companion object
-//core.Board(size = 25)

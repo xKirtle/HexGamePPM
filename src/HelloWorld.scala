@@ -4,17 +4,17 @@ import javafx.scene.{Parent, Scene}
 import javafx.stage.Stage
 
 class HelloWorld extends Application {
+
   override def start(primaryStage: Stage): Unit = {
-    primaryStage.setTitle("My Hello World App")
-    val fxmlLoader =
-      new FXMLLoader(getClass.getResource("Controller.fxml"))
+    val fxmlLoader = new FXMLLoader(getClass.getResource("/Game.fxml"))
     val mainViewRoot: Parent = fxmlLoader.load()
     val scene = new Scene(mainViewRoot)
     primaryStage.setScene(scene)
     primaryStage.show()
   }
 }
-object FxApp {
+
+object HelloWorld {
   def main(args: Array[String]): Unit = {
     Application.launch(classOf[HelloWorld], args: _*)
   }
