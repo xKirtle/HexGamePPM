@@ -1,35 +1,47 @@
+import core.Position.{indexToPosition, positionToIndex}
 import core.{Cells, GameState, Position}
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.GridPane
-import javafx.scene.{Group, Node, paint}
+import javafx.scene.{Group, Node}
 import javafx.scene.paint.Color
 import javafx.scene.shape.{LineTo, MoveTo, Path, Polygon}
 
 import java.net.URL
 import java.util.ResourceBundle
+import scala.annotation.tailrec
 
 class GameController extends Initializable {
 
   @FXML private var gameBoard: GridPane = _
   @FXML private var rootGroup: Group = _
 
-  private val boardSize: Int = 5;
+  private val boardSize: Int = 5
   private val numRows: Int = boardSize
   private val numColumns: Int = boardSize
 
   private val hexagonRadius: Double = 25
   
   private var gameState: GameState = GameState.createNewGameState(boardSize, Cells.Red)
+  private var gameOver: Boolean = false
 
   override def initialize(location: URL, resources: ResourceBundle): Unit = {
     drawHexGameBoard()
   }
 
   private def drawHexGameBoard(): Unit = {
-    for (row <- 0 until numRows) {
-      for (col <- 0 until numColumns) {
+    @tailrec
+    def drawRow(row: Int): Unit = {
+      if (row < numRows) {
+        drawColumn(row, 0)
+        drawRow(row + 1)
+      }
+    }
+
+    @tailrec
+    def drawColumn(row: Int, col: Int): Unit = {
+      if (col < numColumns) {
         val hexagonCopy: Polygon = createHexagon(Position(row, col))
 
         // Shift every second row to create the honeycomb pattern and add padding to the left to create a hex board
@@ -40,12 +52,19 @@ class GameController extends Initializable {
         }
 
         hexagonCopy.setTranslateY(hexagonRadius * 3 / 2 * row) // Adjust the y-coordinate
-        hexagonCopy.setOnMouseClicked((event: MouseEvent) => { handleHexagonClick(hexagonCopy) })
+        hexagonCopy.setOnMouseClicked((_: MouseEvent) => {
+          handleHexagonClick(hexagonCopy)
+        })
 
         gameBoard.getChildren.add(hexagonCopy) // Add the hexagon to the game board
+
+        drawColumn(row, col + 1)
       }
     }
+
+    drawRow(0)
   }
+
 
   private def createHexagon(position: Position): Polygon = {
     val newHexagon: Polygon = new Polygon
@@ -60,29 +79,43 @@ class GameController extends Initializable {
     newHexagon.setFill(Color.WHITE) // Set the hexagon fill color
     newHexagon.setStroke(Color.BLACK) // Set the hexagon stroke color
     newHexagon.setStrokeWidth(1) // Set the hexagon stroke width
-    newHexagon.setId(positionToIndex(position).toString)
+    newHexagon.setId(positionToIndex(position, numRows).toString)
     newHexagon
   }
 
   private def handleHexagonClick(hexagon: Polygon): Unit = {
-    // Position already played
-    if (hexagon.getFill != Color.WHITE) return
+    // Position already played or game over
+    if (hexagon.getFill != Color.WHITE || gameOver) return
 
-    println("Hexagon clicked: " + hexagon.getId)
-
-    val position = indexToPosition(hexagon.getId.toInt)
+    val position = indexToPosition(hexagon.getId.toInt, numRows)
 
     val player = gameState.currentPlayer
     hexagon.setFill(if (player == Cells.Red) Color.RED else Color.BLUE)
     gameState = gameState.play(position)
 
-    val winningPath = GameState.getContiguousLineDFS(player, gameState.board)
+    tryToDisplayWinningPathForPlayer(player)
+  }
+  
+  private def tryToDisplayWinningPathForPlayer(player: Cells.Cell): Unit = {
+    val winningPath: List[Position] = GameState.getContiguousLineDFS(player, gameState.board)
     if (winningPath.nonEmpty) {
       val winningLine = new Path()
+      traverseWinningPath(winningPath, 0, winningLine)
 
-      for (i <- winningPath.indices) {
-        val position: Position = winningPath(i)
-        val index: Int = positionToIndex(position)
+      // Set line color and width
+      winningLine.setStroke(Color.YELLOW)
+      winningLine.setStrokeWidth(3)
+
+      // Add the winningLine to the gameBoard
+      rootGroup.getChildren.add(winningLine)
+      
+      gameOver = true
+    }
+
+    @tailrec
+    def traverseWinningPath(winningPath: List[Position], i: Int, winningLine: Path): Unit = {
+      if (i < winningPath.length) {
+        val index: Int = positionToIndex(winningPath(i), numRows)
 
         val node: Node = gameBoard.getChildren.get(index)
         node match {
@@ -98,20 +131,11 @@ class GameController extends Initializable {
             } else {
               winningLine.getElements.add(new LineTo(centerX, centerY))
             }
+
+            traverseWinningPath(winningPath, i + 1, winningLine)
           case _ =>
         }
       }
-
-      // Set line color and width
-      winningLine.setStroke(Color.YELLOW)
-      winningLine.setStrokeWidth(3)
-
-      // Add the winningLine to the gameBoard
-      rootGroup.getChildren.add(winningLine)
     }
   }
-
-  private def positionToIndex(position: Position): Int = numRows * position.x + position.y
-  
-  private def indexToPosition(index: Int): Position = Position(index / numRows, index % numRows)
 }
