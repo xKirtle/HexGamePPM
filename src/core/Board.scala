@@ -1,13 +1,15 @@
-import Cells.{Cell, Empty}
+package core
 
-// TODO: Board pode ser uma case class em vez do type? || type Board = List[List[Cells.Cell]]
+import core.Cells.{Cell, Empty}
+
+// TODO: core.Board pode ser uma case class em vez do type? || type core.Board = List[List[Cells.Cell]]
 
 // private para obrigar a usar o apply
 case class Board private (size: Int, cells: List[List[Cell]]) {
   def isFull: Boolean = getEmptyCellsPositions == List.empty
 
   def isValidPosition(position: Position): Boolean = {
-    // destructuring into a Position object
+    // destructuring into a core.Position object
     val Position(x, y) = position
     x >= 0 && x < size && y >= 0 && y < size
   }
@@ -49,4 +51,4 @@ object Board {
 }
 
 // vai chamar o apply do companion object
-//Board(size = 25)
+//core.Board(size = 25)

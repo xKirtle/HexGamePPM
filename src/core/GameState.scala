@@ -1,5 +1,7 @@
-import Cells._
-import GameState.swapPlayer
+package core
+
+import core.Cells.{Blue, Cell, Empty, Red}
+import core.GameState.swapPlayer
 
 import scala.annotation.tailrec
 

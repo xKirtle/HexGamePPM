@@ -1,6 +1,7 @@
-import Cells._
-import GameState.{getContiguousLineDFS, swapPlayer}
-import IOUtils._
+import core.Cells._
+import core.GameState.{getContiguousLineDFS, swapPlayer}
+import core.{GameLoop, GameState, IOUtils, MoveGenerator}
+import core.IOUtils._
 
 import scala.annotation.tailrec
 import scala.io.StdIn.readLine
@@ -24,7 +25,7 @@ object TextUserInterface extends App {
       return
     }
     else if (gameState.isBoardFull) {
-      println("Board is full. Game ends in a draw!")
+      println("core.Board is full. Game ends in a draw!")
       IOUtils.printBoard(gameState.board)
     }
 

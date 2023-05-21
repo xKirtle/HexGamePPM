@@ -1,4 +1,6 @@
-import Cells._
+package core
+
+import core.Cells.{Blue, Cell, Empty, Red, Winner}
 
 import scala.annotation.tailrec
 import scala.io.StdIn.readLine
