@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.Group?>
 <?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.shape.Polygon?>
 
-<GridPane fx:id="gameBoard" hgap="10" vgap="10" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.7" fx:controller="GameController" style="-fx-background-color: #FFFFFF;" prefHeight="400" prefWidth="400">
-   <padding>
-      <Insets top="10" right="10" bottom="10" left="10"/>
-   </padding>
-<!--   <Polygon fx:id="hexagon" points="25,0,75,0,100,43,75,87,25,87,0,43" fill="white" visible="false"/>-->
-</GridPane>
+<Group fx:id="rootGroup" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.7" fx:controller="GameController" style="-fx-background-color: #FFFFFF;">
+   <GridPane fx:id="gameBoard" hgap="10" vgap="10" prefHeight="400" prefWidth="400">
+      <padding>
+         <Insets top="10" right="10" bottom="10" left="10"/>
+      </padding>
+   </GridPane>
+</Group>

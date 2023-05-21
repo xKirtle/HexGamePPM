@@ -25,7 +25,7 @@ object TextUserInterface extends App {
       return
     }
     else if (gameState.isBoardFull) {
-      println("core.Board is full. Game ends in a draw!")
+      println("Board is full. Game ends in a draw!")
       IOUtils.printBoard(gameState.board)
     }
 
