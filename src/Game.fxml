@@ -4,13 +4,24 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
 
 <Group fx:id="rootGroup" style="-fx-background-color: #FFFFFF;" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1">
-   <GridPane fx:id="gameBoard" hgap="10" prefHeight="400" prefWidth="400" vgap="10">
+    
+   <Group layoutX="-5">
+       <Polygon fill="red" points="215,110,25,0,155,225" />
+       <Polygon fill="red" points="215,110,415,225,285,0" />
+       <Polygon fill="blue" points="215,110,25,0,285,0" />
+       <Polygon fill="blue" points="215,110,155,225,415,225" />
+   </Group>
+   
+   <GridPane fx:id="gameBoard" layoutX="30" minWidth="430" prefHeight="265">
       <padding>
          <Insets bottom="10" left="10" right="10" top="10" />
       </padding>
       <columnConstraints>
+         <ColumnConstraints />
          <ColumnConstraints />
          <ColumnConstraints />
       </columnConstraints>
@@ -18,7 +29,14 @@
          <RowConstraints />
          <RowConstraints />
          <RowConstraints />
+         <RowConstraints />
       </rowConstraints>
    </GridPane>
-   <Button fx:id="undoMove" layoutX="10.0" layoutY="370.0" mnemonicParsing="false" onMouseClicked="#onUndoClicked" text="Undo Move" />
+    <Text fx:id="currentPlayerText" layoutX="10.0" layoutY="250.0">
+      <font>
+         <Font size="15.0" />
+      </font>
+    </Text>
+    <Button fx:id="goBack" layoutX="10.0" layoutY="170.0" mnemonicParsing="false" onMouseClicked="#onGoBackClicked" text="Go Back" />
+    <Button fx:id="undoMove" layoutX="10.0" layoutY="200.0" mnemonicParsing="false" onMouseClicked="#onUndoClicked" text="Undo Move" />
 </Group>

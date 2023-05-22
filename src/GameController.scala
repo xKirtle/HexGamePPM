@@ -1,13 +1,15 @@
+import GameController.createHexagon
+import OptionsMenuController.loadFXMLWithArgs
 import core.Position.{indexToPosition, positionToIndex}
-import core.{Board, Cells, GameState, MoveGenerator, Position}
+import core.{Cells, GameState, MoveGenerator, Position}
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.scene.control.Button
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.GridPane
 import javafx.scene.{Group, Node}
 import javafx.scene.paint.Color
 import javafx.scene.shape.{LineTo, MoveTo, Path, Polygon}
+import javafx.scene.text.Text
 
 import java.net.URL
 import java.util.ResourceBundle
@@ -18,7 +20,7 @@ class GameController extends Initializable {
   var isOpponentCPU: Boolean = false
   @FXML private var gameBoard: GridPane = _
   @FXML private var rootGroup: Group = _
-  @FXML private var undoButton: Button = _
+  @FXML private var currentPlayerText: Text = _
 
   private val boardSize: Int = 5
   private val numRows: Int = boardSize
@@ -32,59 +34,30 @@ class GameController extends Initializable {
 
   override def initialize(location: URL, resources: ResourceBundle): Unit = {
     drawHexGameBoard()
+    currentPlayerText.setText(s"Current player: ${gameState.currentPlayer}")
   }
+  
+  private def onUndoClicked(): Unit = {
+    val amount = if (isOpponentCPU) 2 else 1
 
-  private def drawHexGameBoard(): Unit = {
-    @tailrec
-    def drawRow(row: Int): Unit = {
-      if (row < numRows) {
-        drawColumn(row, 0)
-        drawRow(row + 1)
+    gameState = gameState.undoPlay(amount)
+    updateHexagonsWithBoardValues()
+    
+    if (gameOver) {
+      val winningLine = rootGroup.getChildren.stream()
+        .filter(node => node.isInstanceOf[Path] && node.getId == "winningLine")
+        .findFirst
+        .orElse(null)
+
+      // Should never be null..
+      if (winningLine != null) {
+        rootGroup.getChildren.remove(winningLine)
       }
+      
+      gameOver = false
     }
 
-    @tailrec
-    def drawColumn(row: Int, col: Int): Unit = {
-      if (col < numColumns) {
-        val hexagonCopy: Polygon = createHexagon(Position(row, col))
-
-        // Shift every second row to create the honeycomb pattern and add padding to the left to create a hex board
-        if (row % 2 == 1) {
-          hexagonCopy.setTranslateX(hexagonRadius * Math.sqrt(3) * (col + Math.ceil(row / 2 + 0.5)))
-        } else {
-          hexagonCopy.setTranslateX(hexagonRadius * Math.sqrt(3) * (col + Math.floor(row / 2)) + hexagonRadius * Math.sqrt(3) / 2)
-        }
-
-        hexagonCopy.setTranslateY(hexagonRadius * 3 / 2 * row) // Adjust the y-coordinate
-        hexagonCopy.setOnMouseClicked((_: MouseEvent) => {
-          handleHexagonClick(hexagonCopy)
-        })
-
-        gameBoard.getChildren.add(hexagonCopy) // Add the hexagon to the game board
-
-        drawColumn(row, col + 1)
-      }
-    }
-
-    drawRow(0)
-  }
-
-
-  private def createHexagon(position: Position): Polygon = {
-    val newHexagon: Polygon = new Polygon
-    newHexagon.getPoints.addAll(
-      0.0, hexagonRadius,
-      hexagonRadius * Math.sqrt(3) / 2, hexagonRadius / 2,
-      hexagonRadius * Math.sqrt(3) / 2, -hexagonRadius / 2,
-      0.0, -hexagonRadius,
-      -hexagonRadius * Math.sqrt(3) / 2, -hexagonRadius / 2,
-      -hexagonRadius * Math.sqrt(3) / 2, hexagonRadius / 2
-    )
-    newHexagon.setFill(Color.WHITE) // Set the hexagon fill color
-    newHexagon.setStroke(Color.BLACK) // Set the hexagon stroke color
-    newHexagon.setStrokeWidth(1) // Set the hexagon stroke width
-    newHexagon.setId(positionToIndex(position, numRows).toString)
-    newHexagon
+    currentPlayerText.setText(s"Current player: ${gameState.currentPlayer}")
   }
 
   private def handleHexagonClick(hexagon: Polygon): Unit = {
@@ -92,59 +65,84 @@ class GameController extends Initializable {
     if (hexagon.getFill != Color.WHITE || gameOver) return
 
     val position = indexToPosition(hexagon.getId.toInt, numRows)
-
     val player = gameState.currentPlayer
-    hexagon.setFill(if (player == Cells.Red) Color.RED else Color.BLUE)
-    
-    gameState = gameState.play(position)
+    makeMove(position, player, if (player == Cells.Red) Color.RED else Color.BLUE)
 
-    tryToDisplayWinningPathForPlayer(player)
-    
-    
-    // TODO: Clean this up, put into its own function and call it after handleHexagonClick where we define it?
+    // Handle CPU turn
     if (isOpponentCPU) {
       val cpuPlayer = gameState.currentPlayer
       val (randomMove, newMoveGenerator) = moveGenerator.betterRandomMove(gameState)
-      val index = positionToIndex(randomMove, numRows)
-      gameBoard.getChildren.get(index) match {
-        case hexagon: Polygon => hexagon.setFill(if (cpuPlayer == Cells.Red) Color.RED else Color.BLUE)
-        case _ =>
-      }
-      
-      gameState = gameState.play(randomMove)
       moveGenerator = newMoveGenerator
-      
-      tryToDisplayWinningPathForPlayer(cpuPlayer)
+      makeMove(randomMove, cpuPlayer, if (cpuPlayer == Cells.Red) Color.RED else Color.BLUE)
     }
+  }
+
+  private def onGoBackClicked(event: MouseEvent): Unit = {
+    loadFXMLWithArgs("OptionsMenu.fxml", event.getSource, loader => loader)
+  }
+  
+  private def drawHexGameBoard(): Unit = {
+    @tailrec
+    def drawRow(position: Position): Unit = {
+      if (position.x < numRows) {
+        drawColumn(position.copy(y = 0))
+        drawRow(position.copy(x = position.x + 1))
+      }
+    }
+
+    @tailrec
+    def drawColumn(position: Position): Unit = {
+      val Position(x, y) = position
+      if (y < numColumns) {
+        val hexagonCopy: Polygon = createHexagon(hexagonRadius)
+        hexagonCopy.setId(positionToIndex(position, numRows).toString)
+
+        // Shift every second row to create the honeycomb pattern and add padding to the left to create a hex board
+        if (x % 2 == 1) {
+          hexagonCopy.setTranslateX(hexagonRadius * Math.sqrt(3) * (y + Math.ceil(x / 2 + 0.5)))
+        } else {
+          hexagonCopy.setTranslateX(hexagonRadius * Math.sqrt(3) * (y + Math.floor(x / 2)) + hexagonRadius * Math.sqrt(3) / 2)
+        }
+
+        hexagonCopy.setTranslateY(hexagonRadius * 3 / 2 * x)
+        hexagonCopy.setOnMouseClicked((_: MouseEvent) => {
+          handleHexagonClick(hexagonCopy)
+        })
+
+        gameBoard.getChildren.add(hexagonCopy)
+
+        drawColumn(position.copy(y = y + 1))
+      }
+    }
+
+    drawRow(Position.zero)
   }
   
   private def tryToDisplayWinningPathForPlayer(player: Cells.Cell): Unit = {
     val winningPath: List[Position] = GameState.getContiguousLineDFS(player, gameState.board)
+    
     if (winningPath.nonEmpty) {
       val winningLine = new Path()
-      traverseWinningPath(winningPath, 0, winningLine)
-
-      // Set line color and width
+      winningLine.setId("winningLine")
+      displayWinningPath(winningPath, 0, winningLine)
+      
       winningLine.setStroke(Color.YELLOW)
       winningLine.setStrokeWidth(3)
-
-      // Add the winningLine to the gameBoard
-      rootGroup.getChildren.add(winningLine)
       
+      rootGroup.getChildren.add(winningLine)
       gameOver = true
     }
 
     @tailrec
-    def traverseWinningPath(winningPath: List[Position], i: Int, winningLine: Path): Unit = {
+    def displayWinningPath(winningPath: List[Position], i: Int, winningLine: Path): Unit = {
       if (i < winningPath.length) {
         val index: Int = positionToIndex(winningPath(i), numRows)
 
         val node: Node = gameBoard.getChildren.get(index)
         node match {
           case winningHexagon: Polygon =>
-            // Calculate the center coordinates of the winningHexagon
-            val centerX = winningHexagon.getBoundsInParent.getCenterX
-            val centerY = winningHexagon.getBoundsInParent.getCenterY
+            val centerX = winningHexagon.getBoundsInParent.getCenterX + winningHexagon.getParent.getLayoutX
+            val centerY = winningHexagon.getBoundsInParent.getCenterY + winningHexagon.getParent.getLayoutY
 
             // Create a new LineTo path element for each hexagon in the winningPath
             if (i == 0) {
@@ -154,19 +152,11 @@ class GameController extends Initializable {
               winningLine.getElements.add(new LineTo(centerX, centerY))
             }
 
-            traverseWinningPath(winningPath, i + 1, winningLine)
+            displayWinningPath(winningPath, i + 1, winningLine)
           case _ =>
         }
       }
     }
-  }
-  
-  @FXML
-  def onUndoClicked(): Unit = {
-    val amount = if (isOpponentCPU) 2 else 1
-    
-    gameState = gameState.undoPlay(amount)
-    updateHexagonsWithBoardValues()
   }
 
   private def updateHexagonsWithBoardValues(): Unit = {
@@ -203,5 +193,36 @@ class GameController extends Initializable {
     }
 
     update()
+  }
+
+  private def makeMove(position: Position, player: Cells.Cell, color: Color): Unit = {
+    val index = positionToIndex(position, numRows)
+    gameBoard.getChildren.get(index) match {
+      case hexagon: Polygon => hexagon.setFill(color)
+      case _ =>
+    }
+    
+    gameState = gameState.play(position)
+    tryToDisplayWinningPathForPlayer(player)
+
+    currentPlayerText.setText(s"Current player: ${gameState.currentPlayer}")
+  }
+}
+
+object GameController {
+   def createHexagon(hexagonRadius: Double): Polygon = {
+    val newHexagon: Polygon = new Polygon
+    newHexagon.getPoints.addAll(
+      0.0, hexagonRadius,
+      hexagonRadius * Math.sqrt(3) / 2, hexagonRadius / 2,
+      hexagonRadius * Math.sqrt(3) / 2, -hexagonRadius / 2,
+      0.0, -hexagonRadius,
+      -hexagonRadius * Math.sqrt(3) / 2, -hexagonRadius / 2,
+      -hexagonRadius * Math.sqrt(3) / 2, hexagonRadius / 2
+    )
+    newHexagon.setFill(Color.WHITE)
+    newHexagon.setStroke(Color.BLACK)
+    newHexagon.setStrokeWidth(1)
+    newHexagon
   }
 }
