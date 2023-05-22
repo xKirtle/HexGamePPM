@@ -37,6 +37,7 @@ class GameController extends Initializable {
     currentPlayerText.setText(s"Current player: ${gameState.currentPlayer}")
   }
   
+  @FXML
   private def onUndoClicked(): Unit = {
     val amount = if (isOpponentCPU) 2 else 1
 
@@ -60,6 +61,7 @@ class GameController extends Initializable {
     currentPlayerText.setText(s"Current player: ${gameState.currentPlayer}")
   }
 
+  @FXML
   private def handleHexagonClick(hexagon: Polygon): Unit = {
     // Position already played or game over
     if (hexagon.getFill != Color.WHITE || gameOver) return
@@ -76,7 +78,8 @@ class GameController extends Initializable {
       makeMove(randomMove, cpuPlayer, if (cpuPlayer == Cells.Red) Color.RED else Color.BLUE)
     }
   }
-
+  
+  @FXML
   private def onGoBackClicked(event: MouseEvent): Unit = {
     loadFXMLWithArgs("OptionsMenu.fxml", event.getSource, loader => loader)
   }
