@@ -20,13 +20,16 @@ case class GameState(board: Board, moveHistory: List[(Position, Cell)], currentP
   }
 
   def undoPlay(amount: Int): GameState = {
+    if (amount <= 0) return this
+      
     val (movesToUndo, newMoveHistory) = moveHistory.splitAt(amount)
     val moves = movesToUndo.map {
       case (position, _) => position
     }
 
     val newBoard = board.updateCellsAt(Empty, moves: _*)
-    GameState(newBoard, newMoveHistory, swapPlayer(currentPlayer))
+    val newPlayer = if (amount % 2 == 0) currentPlayer else swapPlayer(currentPlayer)
+    GameState(newBoard, newMoveHistory, newPlayer)
   }
 }
 

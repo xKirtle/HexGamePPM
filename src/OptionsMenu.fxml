@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane minHeight="200.0" minWidth="300.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="OptionsMenuController">
+    <Button fx:id="vsPlayerButton" layoutX="75.0" layoutY="27.0" onAction="#versusPlayer" prefHeight="50.0" prefWidth="150.0" text="Player VS Player" />
+    <Button fx:id="vsCPUButton" layoutX="75.0" layoutY="106.0" onAction="#versusCPU" prefHeight="50.0" prefWidth="150.0" text="Player VS CPU" />
+</AnchorPane>

@@ -1,7 +1,8 @@
 import core.Position.{indexToPosition, positionToIndex}
-import core.{Cells, GameState, Position}
+import core.{Board, Cells, GameState, MoveGenerator, Position}
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
+import javafx.scene.control.Button
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.GridPane
 import javafx.scene.{Group, Node}
@@ -14,8 +15,10 @@ import scala.annotation.tailrec
 
 class GameController extends Initializable {
 
+  var isOpponentCPU: Boolean = false
   @FXML private var gameBoard: GridPane = _
   @FXML private var rootGroup: Group = _
+  @FXML private var undoButton: Button = _
 
   private val boardSize: Int = 5
   private val numRows: Int = boardSize
@@ -24,6 +27,7 @@ class GameController extends Initializable {
   private val hexagonRadius: Double = 25
   
   private var gameState: GameState = GameState.createNewGameState(boardSize, Cells.Red)
+  private var moveGenerator: MoveGenerator = MoveGenerator()
   private var gameOver: Boolean = false
 
   override def initialize(location: URL, resources: ResourceBundle): Unit = {
@@ -91,9 +95,27 @@ class GameController extends Initializable {
 
     val player = gameState.currentPlayer
     hexagon.setFill(if (player == Cells.Red) Color.RED else Color.BLUE)
+    
     gameState = gameState.play(position)
 
     tryToDisplayWinningPathForPlayer(player)
+    
+    
+    // TODO: Clean this up, put into its own function and call it after handleHexagonClick where we define it?
+    if (isOpponentCPU) {
+      val cpuPlayer = gameState.currentPlayer
+      val (randomMove, newMoveGenerator) = moveGenerator.betterRandomMove(gameState)
+      val index = positionToIndex(randomMove, numRows)
+      gameBoard.getChildren.get(index) match {
+        case hexagon: Polygon => hexagon.setFill(if (cpuPlayer == Cells.Red) Color.RED else Color.BLUE)
+        case _ =>
+      }
+      
+      gameState = gameState.play(randomMove)
+      moveGenerator = newMoveGenerator
+      
+      tryToDisplayWinningPathForPlayer(cpuPlayer)
+    }
   }
   
   private def tryToDisplayWinningPathForPlayer(player: Cells.Cell): Unit = {
@@ -137,5 +159,49 @@ class GameController extends Initializable {
         }
       }
     }
+  }
+  
+  @FXML
+  def onUndoClicked(): Unit = {
+    val amount = if (isOpponentCPU) 2 else 1
+    
+    gameState = gameState.undoPlay(amount)
+    updateHexagonsWithBoardValues()
+  }
+
+  private def updateHexagonsWithBoardValues(): Unit = {
+    @tailrec
+    def update(position: Position = Position.zero): Unit = {
+      val Position(x, y) = position
+      
+      if (x < numRows) {
+        if (y < numColumns) {
+
+          val cell: Cells.Cell = gameState.board.cells(x)(y)
+          val index: Int = positionToIndex(position, numRows)
+          val node: Node = gameBoard.getChildren.get(index)
+          
+          node match {
+            case hexagon: Polygon =>
+              var color: Color = Color.WHITE
+
+              cell match {
+                case Cells.Red => color = Color.RED
+                case Cells.Blue => color = Color.BLUE
+                case _ => color = Color.WHITE
+              }
+
+              hexagon.setFill(color)
+            case _ =>
+          }
+
+          update(position.copy(y = y + 1))
+        } else {
+          update(Position(x + 1, 0))
+        }
+      }
+    }
+
+    update()
   }
 }

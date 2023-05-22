@@ -16,4 +16,6 @@ object Position {
   def positionToIndex(position: Position, maxWidth: Int): Int = maxWidth * position.x + position.y
 
   def indexToPosition(index: Int, maxWidth: Int): Position = Position(index / maxWidth, index % maxWidth)
+  
+  def zero = Position(0, 0)
 }

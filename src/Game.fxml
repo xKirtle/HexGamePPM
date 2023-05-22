@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.Group?>
-<?import javafx.scene.layout.GridPane?>
 
-<Group fx:id="rootGroup" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.7" fx:controller="GameController" style="-fx-background-color: #FFFFFF;">
-   <GridPane fx:id="gameBoard" hgap="10" vgap="10" prefHeight="400" prefWidth="400">
+<?import javafx.geometry.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<Group fx:id="rootGroup" style="-fx-background-color: #FFFFFF;" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1">
+   <GridPane fx:id="gameBoard" hgap="10" prefHeight="400" prefWidth="400" vgap="10">
       <padding>
-         <Insets top="10" right="10" bottom="10" left="10"/>
+         <Insets bottom="10" left="10" right="10" top="10" />
       </padding>
+      <columnConstraints>
+         <ColumnConstraints />
+         <ColumnConstraints />
+      </columnConstraints>
+      <rowConstraints>
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+      </rowConstraints>
    </GridPane>
+   <Button fx:id="undoMove" layoutX="10.0" layoutY="370.0" mnemonicParsing="false" onMouseClicked="#onUndoClicked" text="Undo Move" />
 </Group>
