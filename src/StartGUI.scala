@@ -4,12 +4,12 @@ import javafx.scene.{Parent, Scene}
 import javafx.stage.Stage
 
 class StartGUI extends Application {
-
   override def start(primaryStage: Stage): Unit = {
     val fxmlLoader = new FXMLLoader(getClass.getResource("/OptionsMenu.fxml"))
     val mainViewRoot: Parent = fxmlLoader.load()
     val scene = new Scene(mainViewRoot)
     primaryStage.setScene(scene)
+    primaryStage.setTitle("Options Menu")
     primaryStage.show()
   }
 }

@@ -60,31 +60,59 @@ case class MoveGenerator(seed: Long = Random.nextLong) {
     (validCells(index), newMoveGenerator)
   }
 
-  def weightedRandomMove(gameState: GameState): (Position, MoveGenerator) = {
+  // Gets all the best coordinates to play and plays the one with the smallest distance to the objective
+  def weightedMove(gameState: GameState): (Position, MoveGenerator) = {
     val player = gameState.currentPlayer
     val board = gameState.board
 
-    val maxBoardIndex = gameState.board.size - 1
+    val neighbouringCells = gameState.moveHistory.collect {
+      case (position, moveHistoryPlayer) if moveHistoryPlayer == player => getNeighbours(position, moveHistoryPlayer)
+    }.flatten.toSet
 
-    val target = player match {
-      case Red => (maxBoardIndex, maxBoardIndex)
-      case Blue => (maxBoardIndex, 0)
+    val emptyCellsPositions = board.getEmptyCellsPositions
+    val emptyNeighbourCellsPositions = emptyCellsPositions.filter(neighbouringCells.contains)
+
+    val startPositions = getStartPosition(player, board, populated = false)
+    val emptyStartPositions = emptyCellsPositions.filter(startPositions.contains)
+
+    // If there are no valid neighbours, use start positions or any random neighbouring empty cell
+    val validCells = (emptyNeighbourCellsPositions.isEmpty, emptyStartPositions.isEmpty) match {
+      case (true, true) => emptyCellsPositions
+      case (true, false) => emptyStartPositions
+      case _ => emptyNeighbourCellsPositions
+    }
+    
+    def heuristic(position: Position, targetRow: Int, targetCol: Int): Int = {
+      (targetRow == Int.MaxValue, targetCol == Int.MaxValue) match {
+        case (true, false) => math.abs(position.y - targetCol)
+        case (false, true) => math.abs(position.x - targetRow)
+        case (false, false) => math.abs(position.x - targetRow) + math.abs(position.y - targetCol)
+        case _ => 0
+      }
     }
 
-    // Manhattan distance heuristic
-    def heuristic(position: Position, targetRow: Int, targetCol: Int): Int =
-      math.abs(position.x - targetRow) + math.abs(position.y - targetCol)
+    val (targetRow, targetCol) = player match {
+      case Cells.Blue =>
+        val targetRow = board.size - 1
+        val targetCol = Int.MaxValue
+        (targetRow, targetCol)
 
-    val neighboringCells = gameState.moveHistory.flatMap {
-      case (position, _) => getNeighbours(position, player)
-    }.toSet
-
-    val scoredNeighboringCells = neighboringCells.map { position =>
-      (position, heuristic(position, target._1, target._2))
+      case Cells.Red =>
+        val targetRow = Int.MaxValue
+        val targetCol = board.size - 1
+        (targetRow, targetCol)
     }
 
-    val bestMove = scoredNeighboringCells.minBy(_._2)._1
+    // Get the heuristic for each valid cell and filter valid cells by minimum heuristic
+    val heuristics = validCells.map(pos => heuristic(pos, targetRow, targetCol))
+    val minHeuristic = heuristics.min
+    val bestCells = validCells.zip(heuristics).collect {
+      case (pos, heuristic) if heuristic == minHeuristic => pos
+    }
 
-    (bestMove, this)
+    // If there are multiple best cells, choose randomly among them
+    val (index, newMoveGenerator) = nextInt(bestCells.length)
+
+    (bestCells(index), newMoveGenerator)
   }
 }

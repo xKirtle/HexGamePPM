@@ -2,8 +2,20 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 
-<AnchorPane minHeight="200.0" minWidth="300.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="OptionsMenuController">
-    <Button fx:id="vsPlayerButton" layoutX="75.0" layoutY="27.0" onAction="#versusPlayer" prefHeight="50.0" prefWidth="150.0" text="Player VS Player" />
-    <Button fx:id="vsCPUButton" layoutX="75.0" layoutY="106.0" onAction="#versusCPU" prefHeight="50.0" prefWidth="150.0" text="Player VS CPU" />
+<AnchorPane minHeight="150.0" minWidth="500.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="OptionsMenuController">
+    <Button fx:id="vsPlayerButton" layoutX="180.0" layoutY="14.0" onAction="#versusPlayer" prefHeight="50.0" prefWidth="140.0" text="Player VS Player" />
+    <Button fx:id="vsCPUButtonEasy" layoutX="14.0" layoutY="84.0" onAction="#versusCPUEasy" prefHeight="50.0" prefWidth="140.0" text="Player VS CPU (Easy)">
+      <font>
+         <Font size="11.0" />
+      </font></Button>
+    <Button fx:id="vsCPUButtonMedium" layoutX="180.0" layoutY="84.0" onAction="#versusCPUMedium" prefHeight="50.0" prefWidth="140.0" text="Player VS CPU (Medium)">
+      <font>
+         <Font size="11.0" />
+      </font></Button>
+    <Button fx:id="vsCPUButtonHard" layoutX="346.0" layoutY="84.0" onAction="#versusCPUHard" prefHeight="50.0" prefWidth="140.0" text="Player VS CPU (Hard)">
+      <font>
+         <Font size="11.0" />
+      </font></Button>
 </AnchorPane>

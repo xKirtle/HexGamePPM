@@ -75,7 +75,6 @@ object GameState {
 
         // If the stack is not empty, pop the top position and its associated path
         case (pos, path) :: rest =>
-
           // If the current position is not valid or does not contain the player's cell, skip it and continue with the rest of the stack
           if (!board.isValidPosition(pos) || board.getCellAt(pos) != player)
             dfs(rest, visitedCoords, cache)
@@ -86,8 +85,8 @@ object GameState {
 
           // If the current position is valid and has not been visited before, visit it
           else if (!visitedCoords.contains(pos)) {
-            val newVisitedCoords = visitedCoords + pos  // Mark the current position as visited
-            val neighbours = getNeighbours(pos, player) // Get the neighbours of the current position
+            val newVisitedCoords = visitedCoords + pos
+            val neighbours = getNeighbours(pos, player)
 
             // Check the cache to see if the current position has been visited before
             cache.get(pos) match {
@@ -98,8 +97,8 @@ object GameState {
 
               // If the current position is not in the cache, add its neighbours to the stack and update the cache
               case None =>
-                val newStack = neighbours.map((_, pos :: path)) ++ rest  // Add the neighbours to the stack
-                dfs(newStack, newVisitedCoords, cache + (pos -> (pos :: path))) // Update the cache and continue with the new stack
+                val newStack = neighbours.map((_, pos :: path)) ++ rest
+                dfs(newStack, newVisitedCoords, cache + (pos -> (pos :: path)))
             }
           }
 

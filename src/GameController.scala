@@ -16,22 +16,22 @@ import java.util.ResourceBundle
 import scala.annotation.tailrec
 
 class GameController extends Initializable {
-
-  var isOpponentCPU: Boolean = false
   @FXML private var gameBoard: GridPane = _
   @FXML private var rootGroup: Group = _
   @FXML private var currentPlayerText: Text = _
+  
+  var isOpponentCPU: Boolean = false
+  var difficulty: Int = 0 // 0 - easy, 1 - medium, 2 - hard
 
   private val boardSize: Int = 5
   private val numRows: Int = boardSize
   private val numColumns: Int = boardSize
-
   private val hexagonRadius: Double = 25
   
+  private var gameOver: Boolean = false
   private var gameState: GameState = GameState.createNewGameState(boardSize, Cells.Red)
   private var moveGenerator: MoveGenerator = MoveGenerator()
-  private var gameOver: Boolean = false
-
+  
   override def initialize(location: URL, resources: ResourceBundle): Unit = {
     drawHexGameBoard()
     currentPlayerText.setText(s"Current player: ${gameState.currentPlayer}")
@@ -71,9 +71,15 @@ class GameController extends Initializable {
     makeMove(position, player, if (player == Cells.Red) Color.RED else Color.BLUE)
 
     // Handle CPU turn
-    if (isOpponentCPU) {
+    if (isOpponentCPU && !gameOver) {
       val cpuPlayer = gameState.currentPlayer
-      val (randomMove, newMoveGenerator) = moveGenerator.betterRandomMove(gameState)
+      
+      val (randomMove, newMoveGenerator) = difficulty match {
+        case 0 => moveGenerator.randomMove(gameState.board)
+        case 1 => moveGenerator.betterRandomMove(gameState)
+        case 2 => moveGenerator.weightedMove(gameState)
+      }
+      
       moveGenerator = newMoveGenerator
       makeMove(randomMove, cpuPlayer, if (cpuPlayer == Cells.Red) Color.RED else Color.BLUE)
     }
@@ -81,7 +87,7 @@ class GameController extends Initializable {
   
   @FXML
   private def onGoBackClicked(event: MouseEvent): Unit = {
-    loadFXMLWithArgs("OptionsMenu.fxml", event.getSource, loader => loader)
+    loadFXMLWithArgs("OptionsMenu.fxml", "Options Menu", event.getSource, loader => loader)
   }
   
   private def drawHexGameBoard(): Unit = {
